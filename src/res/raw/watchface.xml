@@ -9,11 +9,11 @@
       y=104   date, muted
       y=155   time, hh:mm, 128px
       y=304   rule
-      y=326   two complication slots, battery and heart rate by default
+      y=318   bottom row: battery slot, current temperature, heart rate slot
 
   The palette is a single grey ramp on black. With no colour to lean on, the
   hierarchy is carried by brightness alone, so pure white is reserved for the
-  three accents (seconds arc, notification dot, rule) and the time sits a step
+  two accents (the seconds arc and the rule) and the time sits a step
   below it. Everything that moves or glows is dropped in ambient.
 -->
 <WatchFace width="450" height="450" clipShape="CIRCLE">
@@ -130,10 +130,12 @@
         </PartDraw>
 
         <!--
-          Two swappable slots rather than hardcoded readouts. They default to
-          battery and heart rate, so the face is useful out of the box, but the
-          wearer can put weather, next event or anything else in either one.
-          Letting the system providers supply the icon also keeps the glyphs
+          The bottom row is three cells: a battery slot, the current
+          temperature, and a heart rate slot. The two outer cells are swappable
+          complications; the temperature between them is native, so it needs no
+          slot of its own.
+
+          Letting the system providers supply the icon keeps the glyphs
           monochrome: a literal heart character gets picked up by the colour
           emoji font and renders as a red blob.
 
@@ -141,14 +143,14 @@
           Condition, so the two numbers stay on one baseline whether or not a
           given provider supplies an icon.
         -->
-        <ComplicationSlot x="100" y="326" width="118" height="62" slotId="0"
+        <ComplicationSlot x="71" y="318" width="96" height="62" slotId="0"
                           name="left_complication"
                           displayName="left_complication_label"
                           supportedTypes="SHORT_TEXT EMPTY">
             <Variant mode="AMBIENT" target="alpha" value="130"/>
             <DefaultProviderPolicy defaultSystemProvider="WATCH_BATTERY"
                                    defaultSystemProviderType="SHORT_TEXT"/>
-            <BoundingRoundBox x="0" y="0" width="118" height="62"
+            <BoundingRoundBox x="0" y="0" width="96" height="62"
                               outlinePadding="2.0" cornerRadius="16"/>
             <Complication type="SHORT_TEXT">
                 <Condition>
@@ -156,12 +158,12 @@
                         <Expression name="left_icon"><![CDATA[[COMPLICATION.MONOCHROMATIC_IMAGE] != null]]></Expression>
                     </Expressions>
                     <Compare expression="left_icon">
-                        <PartImage x="46" y="0" width="26" height="26" tintColor="#ffdde1e7">
+                        <PartImage x="35" y="0" width="26" height="26" tintColor="#ffdde1e7">
                             <Image resource="[COMPLICATION.MONOCHROMATIC_IMAGE]"/>
                         </PartImage>
                     </Compare>
                 </Condition>
-                <PartText x="0" y="28" width="118" height="34">
+                <PartText x="0" y="28" width="96" height="34">
                     <Text align="CENTER" ellipsis="TRUE">
                         <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
                             <Template><![CDATA[%s]]>
@@ -189,20 +191,20 @@
           The cost is that the heart stays put if this slot is pointed at some
           other provider.
         -->
-        <ComplicationSlot x="232" y="326" width="118" height="62" slotId="1"
+        <ComplicationSlot x="283" y="318" width="96" height="62" slotId="1"
                           name="right_complication"
                           displayName="right_complication_label"
                           supportedTypes="SHORT_TEXT EMPTY">
             <Variant mode="AMBIENT" target="alpha" value="130"/>
             <DefaultProviderPolicy defaultSystemProvider="HEART_RATE"
                                    defaultSystemProviderType="SHORT_TEXT"/>
-            <BoundingRoundBox x="0" y="0" width="118" height="62"
+            <BoundingRoundBox x="0" y="0" width="96" height="62"
                               outlinePadding="2.0" cornerRadius="16"/>
             <Complication type="SHORT_TEXT">
-                <PartImage x="46" y="0" width="26" height="26" tintColor="#ffdde1e7">
+                <PartImage x="35" y="0" width="26" height="26" tintColor="#ffdde1e7">
                     <Image resource="ic_heart"/>
                 </PartImage>
-                <PartText x="0" y="28" width="118" height="34">
+                <PartText x="0" y="28" width="96" height="34">
                     <Text align="CENTER" ellipsis="TRUE">
                         <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
                             <Template><![CDATA[%s]]>
@@ -213,6 +215,45 @@
                 </PartText>
             </Complication>
         </ComplicationSlot>
+
+        <!--
+          Current temperature, centre cell of the bottom row.
+
+          WFF exposes weather natively from v2, so this needs no complication
+          slot and no permission in the manifest: the runtime supplies the data
+          from whatever weather source the watch already has. IS_AVAILABLE
+          guards it, since the reading is empty until that source has fetched.
+
+          Sits on the same baseline as the two flanking values, so the three
+          numbers line up.
+        -->
+        <Condition>
+            <Expressions>
+                <Expression name="weatherReady"><![CDATA[[WEATHER.IS_AVAILABLE]]]></Expression>
+            </Expressions>
+            <Compare expression="weatherReady">
+                <PartText x="177" y="346" width="96" height="34" name="weather">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
+                            <Template><![CDATA[%d°]]>
+                                <Parameter expression="[WEATHER.TEMPERATURE]"/>
+                            </Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Compare>
+            <Default>
+                <PartText x="177" y="346" width="96" height="34" name="weather_none">
+                    <Variant mode="AMBIENT" target="alpha" value="100"/>
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ff5c636c">
+                            <Template><![CDATA[--]]></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Default>
+        </Condition>
 
     </Scene>
 </WatchFace>
