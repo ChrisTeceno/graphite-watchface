@@ -18,7 +18,10 @@ ADB=(adb)
 [ -n "$SERIAL" ] && ADB=(adb -s "$SERIAL")
 
 OUT="src/res/drawable/preview.png"
-RAW="$(mktemp -t wfpreview).png"
+# No extension appended: mktemp guarantees this exact path was created
+# atomically, and PIL detects PNG from the file's magic bytes rather than
+# the name. Appending .png would write to a path mktemp never made.
+RAW="$(mktemp -t wfpreview)"
 trap 'rm -f "$RAW"' EXIT
 
 "${ADB[@]}" exec-out screencap -p > "$RAW"

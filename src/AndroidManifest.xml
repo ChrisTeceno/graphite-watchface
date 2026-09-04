@@ -15,8 +15,9 @@
 
         <!--
           WFF v2 is the lowest version that carries every feature this face uses
-          (Condition/Expressions, Transform on Arc endAngle, UNREAD_NOTIFICATION_COUNT).
-          Staying at 2 keeps it installable on Wear OS 5 and up, Wear OS 7 included.
+          (Condition/Expressions, Transform on Arc endAngle, Launch targets and
+          complication slots). Staying at 2 keeps it installable on Wear OS 5
+          and up, Wear OS 7 included.
         -->
         <property
             android:name="com.google.wear.watchface.format.version"

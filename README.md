@@ -2,12 +2,11 @@
 
 A greyscale digital watch face for Wear OS, built in [Watch Face Format](https://developer.android.com/training/wearables/wff) (WFF). Targets Pixel Watch 3 on Wear OS 7, and installs on anything from Wear OS 5 up.
 
-```
-              Fri 04 Sep
-               08 16
-               ─────
-            100      75
-```
+| Interactive | Ambient |
+|---|---|
+| <img src="docs/interactive.png" width="320" alt="Graphite watch face in interactive mode: date, 24-hour time, battery and heart rate"> | <img src="docs/ambient.png" width="320" alt="Graphite watch face in ambient mode: thinner time, arc and rule dropped, everything dimmed"> |
+
+Both are real captures from a Pixel Watch 3. The small dot at the bottom is Wear OS's own unread-notification indicator, not part of the face. Ambient drops the seconds arc, the rail and the rule, thins the time and dims the rest, measuring 4.6% lit pixels against 10.2% interactive.
 
 Black ground, a single grey ramp, and no colour anywhere. With no hue to lean on the hierarchy is carried by brightness alone, so pure white is reserved for the two accents (the seconds arc and the rule under the time) and the time itself sits one step below.
 
@@ -28,7 +27,9 @@ No Gradle. A WFF bundle is resources only (`hasCode="false"`), so `aapt2` and `a
 ./build.sh install -s emulator-5554     # ... on a specific one
 ```
 
-Pin `-s` whenever anything else is adb-connected. A Google TV Streamer on the network shares the adb server and will answer instead of the watch.
+Pin `-s` whenever anything else is adb-connected. Any other adb-reachable device on the network shares the adb server and will happily answer instead of the watch.
+
+The APK is **debug-signed**, with the standard Android debug keystore (`~/.android/debug.keystore`, password `android`), generated on first build if absent. That is fine for sideloading onto your own watch and nothing else: it is not a release key, no signing material is in this repo, and publishing to Play would need a real upload key.
 
 ## Running it
 
