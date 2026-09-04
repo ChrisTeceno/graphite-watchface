@@ -8,17 +8,64 @@
       (no notification dot: Wear OS paints its own, low and centred)
       y=104   date, muted
       y=155   time, hh:mm, 128px
-      y=304   rule
-      y=318   bottom row: battery slot, current temperature, heart rate slot
+      y=318   bottom row: battery slot, weather icon + temperature,
+              heart rate slot
 
   The palette is a single grey ramp on black. With no colour to lean on, the
   hierarchy is carried by brightness alone, so pure white is reserved for the
-  two accents (the seconds arc and the rule) and the time sits a step
+  one accent (the seconds arc) and the time sits a step
   below it. Everything that moves or glows is dropped in ambient.
 -->
 <WatchFace width="450" height="450" clipShape="CIRCLE">
     <Metadata key="CLOCK_TYPE" value="DIGITAL"/>
     <Metadata key="PREVIEW_TIME" value="10:08:41"/>
+
+  <!--
+    Weather glyphs, indexed by [WEATHER.CONDITION] (0-15). Using a
+    BitmapFont lets the enum value BE the lookup, so no Condition chain
+    of sixteen branches is needed. Several codes share a glyph, and
+    CLEAR/SUNNY/PARTLY_CLOUDY differ between the two sets so the night
+    icons show a moon. Names 0-9 are Characters; 10-15 are two
+    characters each and so must be Words.
+  -->
+  <BitmapFonts>
+    <BitmapFont name="wx_day">
+      <Character name="0" resource="wx_unknown" width="96" height="96"/>
+      <Character name="1" resource="wx_sun" width="96" height="96"/>
+      <Character name="2" resource="wx_cloud" width="96" height="96"/>
+      <Character name="3" resource="wx_fog" width="96" height="96"/>
+      <Character name="4" resource="wx_heavy_rain" width="96" height="96"/>
+      <Character name="5" resource="wx_snow" width="96" height="96"/>
+      <Character name="6" resource="wx_rain" width="96" height="96"/>
+      <Character name="7" resource="wx_snow" width="96" height="96"/>
+      <Character name="8" resource="wx_sun" width="96" height="96"/>
+      <Character name="9" resource="wx_storm" width="96" height="96"/>
+      <Word name="10" resource="wx_sleet" width="96" height="96"/>
+      <Word name="11" resource="wx_snow" width="96" height="96"/>
+      <Word name="12" resource="wx_rain" width="96" height="96"/>
+      <Word name="13" resource="wx_fog" width="96" height="96"/>
+      <Word name="14" resource="wx_partly_day" width="96" height="96"/>
+      <Word name="15" resource="wx_wind" width="96" height="96"/>
+    </BitmapFont>
+    <BitmapFont name="wx_night">
+      <Character name="0" resource="wx_unknown" width="96" height="96"/>
+      <Character name="1" resource="wx_moon" width="96" height="96"/>
+      <Character name="2" resource="wx_cloud" width="96" height="96"/>
+      <Character name="3" resource="wx_fog" width="96" height="96"/>
+      <Character name="4" resource="wx_heavy_rain" width="96" height="96"/>
+      <Character name="5" resource="wx_snow" width="96" height="96"/>
+      <Character name="6" resource="wx_rain" width="96" height="96"/>
+      <Character name="7" resource="wx_snow" width="96" height="96"/>
+      <Character name="8" resource="wx_moon" width="96" height="96"/>
+      <Character name="9" resource="wx_storm" width="96" height="96"/>
+      <Word name="10" resource="wx_sleet" width="96" height="96"/>
+      <Word name="11" resource="wx_snow" width="96" height="96"/>
+      <Word name="12" resource="wx_rain" width="96" height="96"/>
+      <Word name="13" resource="wx_fog" width="96" height="96"/>
+      <Word name="14" resource="wx_partly_night" width="96" height="96"/>
+      <Word name="15" resource="wx_wind" width="96" height="96"/>
+    </BitmapFont>
+  </BitmapFonts>
 
     <Scene backgroundColor="#ff000000">
 
@@ -120,14 +167,6 @@
                 <Font family="SYNC_TO_DEVICE" size="128" weight="THIN" color="#ffb9bfc9"/>
             </TimeText>
         </DigitalClock>
-
-        <!-- The one bright accent under the time. -->
-        <PartDraw x="197" y="304" width="56" height="2" name="rule">
-            <Variant mode="AMBIENT" target="alpha" value="0"/>
-            <Rectangle x="0" y="0" width="56" height="2">
-                <Fill color="#ffffffff"/>
-            </Rectangle>
-        </PartDraw>
 
         <!--
           The bottom row is three cells: a battery slot, the current
@@ -232,6 +271,39 @@
                 <Expression name="weatherReady"><![CDATA[[WEATHER.IS_AVAILABLE]]]></Expression>
             </Expressions>
             <Compare expression="weatherReady">
+                <!-- Day or night glyph set, chosen by IS_DAY so CLEAR reads as
+                     a sun by day and a moon by night. -->
+                <Condition>
+                    <Expressions>
+                        <Expression name="isDay"><![CDATA[[WEATHER.IS_DAY]]]></Expression>
+                    </Expressions>
+                    <Compare expression="isDay">
+                <PartText x="177" y="318" width="96" height="26"
+                          name="wx_icon_day" tintColor="#ffdde1e7">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <BitmapFont family="wx_day" size="26">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
+                            </Template>
+                        </BitmapFont>
+                    </Text>
+                </PartText>
+                    </Compare>
+                    <Default>
+                <PartText x="177" y="318" width="96" height="26"
+                          name="wx_icon_night" tintColor="#ffdde1e7">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <BitmapFont family="wx_night" size="26">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
+                            </Template>
+                        </BitmapFont>
+                    </Text>
+                </PartText>
+                    </Default>
+                </Condition>
                 <PartText x="177" y="346" width="96" height="34" name="weather">
                     <Variant mode="AMBIENT" target="alpha" value="130"/>
                     <Text align="CENTER">
