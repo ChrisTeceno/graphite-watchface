@@ -8,17 +8,80 @@
       (no notification dot: Wear OS paints its own, low and centred)
       y=104   date, muted
       y=155   time, hh:mm, 128px
-      y=304   rule
-      y=326   two complication slots, battery and heart rate by default
+      y=318   bottom row: battery slot, weather icon + temperature,
+              heart rate slot
 
   The palette is a single grey ramp on black. With no colour to lean on, the
   hierarchy is carried by brightness alone, so pure white is reserved for the
-  three accents (seconds arc, notification dot, rule) and the time sits a step
+  one accent (the seconds arc) and the time sits a step
   below it. Everything that moves or glows is dropped in ambient.
 -->
 <WatchFace width="450" height="450" clipShape="CIRCLE">
     <Metadata key="CLOCK_TYPE" value="DIGITAL"/>
     <Metadata key="PREVIEW_TIME" value="10:08:41"/>
+
+  <!--
+    Weather glyphs, indexed by [WEATHER.CONDITION] (0-15). Using a
+    BitmapFont lets the enum value BE the lookup, so no Condition chain
+    of sixteen branches is needed. Several codes share a glyph, and
+    CLEAR/SUNNY/PARTLY_CLOUDY differ between the two sets so the night
+    icons show a moon. Names 0-9 are Characters; 10-15 are two
+    characters each and so must be Words.
+  -->
+  <BitmapFonts>
+    <BitmapFont name="wx_day">
+      <Character name="0" resource="wx_unknown" width="96" height="96"/>
+      <Character name="1" resource="wx_sun" width="96" height="96"/>
+      <Character name="2" resource="wx_cloud" width="96" height="96"/>
+      <Character name="3" resource="wx_fog" width="96" height="96"/>
+      <Character name="4" resource="wx_heavy_rain" width="96" height="96"/>
+      <Character name="5" resource="wx_snow" width="96" height="96"/>
+      <Character name="6" resource="wx_rain" width="96" height="96"/>
+      <Character name="7" resource="wx_snow" width="96" height="96"/>
+      <Character name="8" resource="wx_sun" width="96" height="96"/>
+      <Character name="9" resource="wx_storm" width="96" height="96"/>
+      <Word name="10" resource="wx_sleet" width="96" height="96"/>
+      <Word name="11" resource="wx_snow" width="96" height="96"/>
+      <Word name="12" resource="wx_rain" width="96" height="96"/>
+      <Word name="13" resource="wx_fog" width="96" height="96"/>
+      <Word name="14" resource="wx_partly_day" width="96" height="96"/>
+      <Word name="15" resource="wx_wind" width="96" height="96"/>
+    </BitmapFont>
+    <BitmapFont name="wx_night">
+      <Character name="0" resource="wx_unknown" width="96" height="96"/>
+      <Character name="1" resource="wx_moon" width="96" height="96"/>
+      <Character name="2" resource="wx_cloud" width="96" height="96"/>
+      <Character name="3" resource="wx_fog" width="96" height="96"/>
+      <Character name="4" resource="wx_heavy_rain" width="96" height="96"/>
+      <Character name="5" resource="wx_snow" width="96" height="96"/>
+      <Character name="6" resource="wx_rain" width="96" height="96"/>
+      <Character name="7" resource="wx_snow" width="96" height="96"/>
+      <Character name="8" resource="wx_moon" width="96" height="96"/>
+      <Character name="9" resource="wx_storm" width="96" height="96"/>
+      <Word name="10" resource="wx_sleet" width="96" height="96"/>
+      <Word name="11" resource="wx_snow" width="96" height="96"/>
+      <Word name="12" resource="wx_rain" width="96" height="96"/>
+      <Word name="13" resource="wx_fog" width="96" height="96"/>
+      <Word name="14" resource="wx_partly_night" width="96" height="96"/>
+      <Word name="15" resource="wx_wind" width="96" height="96"/>
+    </BitmapFont>
+    <!--
+      Moon phases, indexed by [MOON_PHASE_TYPE] (0-7): new, evening
+      crescent, first quarter, waxing gibbous, full, waning gibbous, last
+      quarter, morning crescent. Used instead of a generic moon whenever the
+      night sky is clear, so the glyph matches the sky you would look up at.
+    -->
+    <BitmapFont name="moon_phases">
+      <Character name="0" resource="moon_0" width="96" height="96"/>
+      <Character name="1" resource="moon_1" width="96" height="96"/>
+      <Character name="2" resource="moon_2" width="96" height="96"/>
+      <Character name="3" resource="moon_3" width="96" height="96"/>
+      <Character name="4" resource="moon_4" width="96" height="96"/>
+      <Character name="5" resource="moon_5" width="96" height="96"/>
+      <Character name="6" resource="moon_6" width="96" height="96"/>
+      <Character name="7" resource="moon_7" width="96" height="96"/>
+    </BitmapFont>
+  </BitmapFonts>
 
     <Scene backgroundColor="#ff000000">
 
@@ -121,19 +184,13 @@
             </TimeText>
         </DigitalClock>
 
-        <!-- The one bright accent under the time. -->
-        <PartDraw x="197" y="304" width="56" height="2" name="rule">
-            <Variant mode="AMBIENT" target="alpha" value="0"/>
-            <Rectangle x="0" y="0" width="56" height="2">
-                <Fill color="#ffffffff"/>
-            </Rectangle>
-        </PartDraw>
-
         <!--
-          Two swappable slots rather than hardcoded readouts. They default to
-          battery and heart rate, so the face is useful out of the box, but the
-          wearer can put weather, next event or anything else in either one.
-          Letting the system providers supply the icon also keeps the glyphs
+          The bottom row is three cells: a battery slot, the current
+          temperature, and a heart rate slot. The two outer cells are swappable
+          complications; the temperature between them is native, so it needs no
+          slot of its own.
+
+          Letting the system providers supply the icon keeps the glyphs
           monochrome: a literal heart character gets picked up by the colour
           emoji font and renders as a red blob.
 
@@ -141,14 +198,14 @@
           Condition, so the two numbers stay on one baseline whether or not a
           given provider supplies an icon.
         -->
-        <ComplicationSlot x="100" y="326" width="118" height="62" slotId="0"
+        <ComplicationSlot x="71" y="318" width="96" height="62" slotId="0"
                           name="left_complication"
                           displayName="left_complication_label"
                           supportedTypes="SHORT_TEXT EMPTY">
             <Variant mode="AMBIENT" target="alpha" value="130"/>
             <DefaultProviderPolicy defaultSystemProvider="WATCH_BATTERY"
                                    defaultSystemProviderType="SHORT_TEXT"/>
-            <BoundingRoundBox x="0" y="0" width="118" height="62"
+            <BoundingRoundBox x="0" y="0" width="96" height="62"
                               outlinePadding="2.0" cornerRadius="16"/>
             <Complication type="SHORT_TEXT">
                 <Condition>
@@ -156,12 +213,12 @@
                         <Expression name="left_icon"><![CDATA[[COMPLICATION.MONOCHROMATIC_IMAGE] != null]]></Expression>
                     </Expressions>
                     <Compare expression="left_icon">
-                        <PartImage x="46" y="0" width="26" height="26" tintColor="#ffdde1e7">
+                        <PartImage x="35" y="0" width="26" height="26" tintColor="#ffdde1e7">
                             <Image resource="[COMPLICATION.MONOCHROMATIC_IMAGE]"/>
                         </PartImage>
                     </Compare>
                 </Condition>
-                <PartText x="0" y="28" width="118" height="34">
+                <PartText x="0" y="28" width="96" height="34">
                     <Text align="CENTER" ellipsis="TRUE">
                         <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
                             <Template><![CDATA[%s]]>
@@ -189,20 +246,20 @@
           The cost is that the heart stays put if this slot is pointed at some
           other provider.
         -->
-        <ComplicationSlot x="232" y="326" width="118" height="62" slotId="1"
+        <ComplicationSlot x="283" y="318" width="96" height="62" slotId="1"
                           name="right_complication"
                           displayName="right_complication_label"
                           supportedTypes="SHORT_TEXT EMPTY">
             <Variant mode="AMBIENT" target="alpha" value="130"/>
             <DefaultProviderPolicy defaultSystemProvider="HEART_RATE"
                                    defaultSystemProviderType="SHORT_TEXT"/>
-            <BoundingRoundBox x="0" y="0" width="118" height="62"
+            <BoundingRoundBox x="0" y="0" width="96" height="62"
                               outlinePadding="2.0" cornerRadius="16"/>
             <Complication type="SHORT_TEXT">
-                <PartImage x="46" y="0" width="26" height="26" tintColor="#ffdde1e7">
+                <PartImage x="35" y="0" width="26" height="26" tintColor="#ffdde1e7">
                     <Image resource="ic_heart"/>
                 </PartImage>
-                <PartText x="0" y="28" width="118" height="34">
+                <PartText x="0" y="28" width="96" height="34">
                     <Text align="CENTER" ellipsis="TRUE">
                         <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
                             <Template><![CDATA[%s]]>
@@ -213,6 +270,102 @@
                 </PartText>
             </Complication>
         </ComplicationSlot>
+
+        <!--
+          Current temperature, centre cell of the bottom row.
+
+          WFF exposes weather natively from v2, so this needs no complication
+          slot and no permission in the manifest: the runtime supplies the data
+          from whatever weather source the watch already has. IS_AVAILABLE
+          guards it, since the reading is empty until that source has fetched.
+
+          Sits on the same baseline as the two flanking values, so the three
+          numbers line up.
+        -->
+        <Condition>
+            <Expressions>
+                <Expression name="weatherReady"><![CDATA[[WEATHER.IS_AVAILABLE]]]></Expression>
+            </Expressions>
+            <Compare expression="weatherReady">
+                <!-- Day or night glyph set, chosen by IS_DAY so CLEAR reads as
+                     a sun by day and a moon by night. -->
+                <Condition>
+                    <Expressions>
+                        <Expression name="isDay"><![CDATA[[WEATHER.IS_DAY]]]></Expression>
+                    </Expressions>
+                    <Compare expression="isDay">
+                <PartText x="177" y="318" width="96" height="26"
+                          name="wx_icon_day" tintColor="#ffdde1e7">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <BitmapFont family="wx_day" size="26">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
+                            </Template>
+                        </BitmapFont>
+                    </Text>
+                </PartText>
+                    </Compare>
+                    <Default>
+                        <!-- CLEAR (1) and SUNNY (8) at night mean an
+                             unobscured sky, so show the actual lunar phase
+                             rather than a generic crescent. Every other
+                             condition falls through to the weather glyph. -->
+                        <Condition>
+                            <Expressions>
+                                <Expression name="clearNight"><![CDATA[[WEATHER.CONDITION] == 1 || [WEATHER.CONDITION] == 8]]></Expression>
+                            </Expressions>
+                            <Compare expression="clearNight">
+                <PartText x="177" y="318" width="96" height="26"
+                          name="moon_icon" tintColor="#ffdde1e7">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <BitmapFont family="moon_phases" size="26">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[MOON_PHASE_TYPE]"/>
+                            </Template>
+                        </BitmapFont>
+                    </Text>
+                </PartText>
+                            </Compare>
+                            <Default>
+                <PartText x="177" y="318" width="96" height="26"
+                          name="wx_icon_night" tintColor="#ffdde1e7">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <BitmapFont family="wx_night" size="26">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
+                            </Template>
+                        </BitmapFont>
+                    </Text>
+                </PartText>
+                            </Default>
+                        </Condition>
+                    </Default>
+                </Condition>
+                <PartText x="177" y="346" width="96" height="34" name="weather">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
+                            <Template><![CDATA[%d°]]>
+                                <Parameter expression="[WEATHER.TEMPERATURE]"/>
+                            </Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Compare>
+            <Default>
+                <PartText x="177" y="346" width="96" height="34" name="weather_none">
+                    <Variant mode="AMBIENT" target="alpha" value="100"/>
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ff5c636c">
+                            <Template><![CDATA[--]]></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Default>
+        </Condition>
 
     </Scene>
 </WatchFace>
