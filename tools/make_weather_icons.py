@@ -105,8 +105,65 @@ def flakes(d, cx, y0, n, r):
             )
 
 
+def snowflake(d, cx, cy, r, arms=6, branch=0.36):
+    """Six-armed flake with a branch pair on each arm."""
+    stroke = int(r * 0.20)
+    for i in range(arms):
+        a = math.pi * i / (arms / 2)
+        ex, ey = cx + math.cos(a) * r, cy + math.sin(a) * r
+        d.line((cx, cy, ex, ey), fill=WHITE, width=stroke)
+        # Two branches angled off the arm, two thirds of the way out.
+        bx, by = cx + math.cos(a) * r * 0.60, cy + math.sin(a) * r * 0.60
+        for sign in (1, -1):
+            ba = a + sign * math.pi / 4
+            d.line(
+                (bx, by, bx + math.cos(ba) * r * branch, by + math.sin(ba) * r * branch),
+                fill=WHITE,
+                width=stroke,
+            )
+    circle(d, cx, cy, r * 0.16)
+
+
+def droplet(d, cx, cy, r):
+    """Teardrop: a disc with a point drawn on top of it."""
+    circle(d, cx, cy + r * 0.28, r * 0.72)
+    d.polygon(
+        [(cx, cy - r), (cx - r * 0.62, cy + r * 0.42), (cx + r * 0.62, cy + r * 0.42)], fill=WHITE
+    )
+
+
+def moon_phase(fraction, waxing):
+    """A disc lit to `fraction`, terminator on the correct side.
+
+    The terminator of a sphere lit from the side projects to an ellipse, so at
+    height y the boundary sits at x = k*sqrt(1-y^2) with k = 1-2*fraction. That
+    gives new (k=1, nothing lit) through full (k=-1, all lit) continuously,
+    rather than faking each phase as a separate shape.
+    """
+    img, d = canvas()
+    c = W / 2
+    r = W * 0.40
+    k = 1 - 2 * fraction
+    px = img.load()
+    for y in range(int(c - r), int(c + r) + 1):
+        ny = (y - c) / r
+        half = math.sqrt(max(0.0, 1 - ny * ny))
+        xt = k * half
+        for x in range(int(c - r), int(c + r) + 1):
+            nx = (x - c) / r
+            if nx * nx + ny * ny > 1:
+                continue
+            lit = nx >= xt if waxing else nx <= -xt
+            if lit:
+                px[x, y] = WHITE
+    # New moon would be invisible on black, so outline it.
+    if fraction <= 0.01:
+        d.ellipse((c - r, c - r, c + r, c + r), outline=WHITE, width=int(W * 0.035))
+    return img
+
+
 def bolt(d, cx, cy, h):
-    w = h * 0.42
+    w = h * 0.46
     d.polygon(
         [
             (cx + w * 0.15, cy - h / 2),
@@ -167,21 +224,23 @@ def build():
         strokes(d, c, c + W * 0.20, n, ln)
         save(img, name)
 
+    # Snow and thunderstorm are bare symbols rather than cloud-plus-detail:
+    # at 26px the detail under a cloud mushes together, while a flake and a
+    # bolt read instantly on their own.
     img, d = canvas()
-    cloud(d, c, c - W * 0.14, W * 0.74)
-    flakes(d, c, c + W * 0.28, 3, W * 0.07)
+    snowflake(d, c, c, W * 0.40)
     save(img, "wx_snow")
 
     img, d = canvas()
-    cloud(d, c, c - W * 0.14, W * 0.74)
-    strokes(d, c - W * 0.09, c + W * 0.20, 1, W * 0.22)
-    flakes(d, c + W * 0.12, c + W * 0.30, 1, W * 0.07)
-    save(img, "wx_sleet")
-
-    img, d = canvas()
-    cloud(d, c, c - W * 0.16, W * 0.74)
-    bolt(d, c, c + W * 0.26, W * 0.30)
+    bolt(d, c, c, W * 0.95)
     save(img, "wx_storm")
+
+    # Sleet is rain and snow together, so it pairs the two symbols. The old
+    # version stacked a stroke and a flake under a cloud and was illegible.
+    img, d = canvas()
+    droplet(d, c - W * 0.22, c - W * 0.04, W * 0.27)
+    snowflake(d, c + W * 0.22, c + W * 0.06, W * 0.26)
+    save(img, "wx_sleet")
 
     img, d = canvas()
     bars(d, c, [0.62, 0.74, 0.56, 0.68], W * 0.15, W * 0.075)
@@ -203,7 +262,25 @@ def build():
     bars(d, c, [0.34], 0, W * 0.085)
     save(img, "wx_unknown")
 
-    print(f"wrote 13 glyphs to {OUT}")
+    # Moon phases, indexed by [MOON_PHASE_TYPE] 0-7. Waxing lights the right
+    # limb, which is the northern-hemisphere view.
+    phases = [
+        (0.00, True),
+        (0.25, True),
+        (0.50, True),
+        (0.75, True),
+        (1.00, True),
+        (0.75, False),
+        (0.50, False),
+        (0.25, False),
+    ]
+    for i, (frac, waxing) in enumerate(phases):
+        save(moon_phase(frac, waxing), f"moon_{i}")
+
+    print(
+        f"wrote {len(list(OUT.glob('wx_*.png')))} weather "
+        f"and {len(list(OUT.glob('moon_*.png')))} moon glyphs to {OUT}"
+    )
 
 
 if __name__ == "__main__":

@@ -65,6 +65,22 @@
       <Word name="14" resource="wx_partly_night" width="96" height="96"/>
       <Word name="15" resource="wx_wind" width="96" height="96"/>
     </BitmapFont>
+    <!--
+      Moon phases, indexed by [MOON_PHASE_TYPE] (0-7): new, evening
+      crescent, first quarter, waxing gibbous, full, waning gibbous, last
+      quarter, morning crescent. Used instead of a generic moon whenever the
+      night sky is clear, so the glyph matches the sky you would look up at.
+    -->
+    <BitmapFont name="moon_phases">
+      <Character name="0" resource="moon_0" width="96" height="96"/>
+      <Character name="1" resource="moon_1" width="96" height="96"/>
+      <Character name="2" resource="moon_2" width="96" height="96"/>
+      <Character name="3" resource="moon_3" width="96" height="96"/>
+      <Character name="4" resource="moon_4" width="96" height="96"/>
+      <Character name="5" resource="moon_5" width="96" height="96"/>
+      <Character name="6" resource="moon_6" width="96" height="96"/>
+      <Character name="7" resource="moon_7" width="96" height="96"/>
+    </BitmapFont>
   </BitmapFonts>
 
     <Scene backgroundColor="#ff000000">
@@ -291,6 +307,28 @@
                 </PartText>
                     </Compare>
                     <Default>
+                        <!-- CLEAR (1) and SUNNY (8) at night mean an
+                             unobscured sky, so show the actual lunar phase
+                             rather than a generic crescent. Every other
+                             condition falls through to the weather glyph. -->
+                        <Condition>
+                            <Expressions>
+                                <Expression name="clearNight"><![CDATA[[WEATHER.CONDITION] == 1 || [WEATHER.CONDITION] == 8]]></Expression>
+                            </Expressions>
+                            <Compare expression="clearNight">
+                <PartText x="177" y="318" width="96" height="26"
+                          name="moon_icon" tintColor="#ffdde1e7">
+                    <Variant mode="AMBIENT" target="alpha" value="130"/>
+                    <Text align="CENTER">
+                        <BitmapFont family="moon_phases" size="26">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[MOON_PHASE_TYPE]"/>
+                            </Template>
+                        </BitmapFont>
+                    </Text>
+                </PartText>
+                            </Compare>
+                            <Default>
                 <PartText x="177" y="318" width="96" height="26"
                           name="wx_icon_night" tintColor="#ffdde1e7">
                     <Variant mode="AMBIENT" target="alpha" value="130"/>
@@ -302,6 +340,8 @@
                         </BitmapFont>
                     </Text>
                 </PartText>
+                            </Default>
+                        </Condition>
                     </Default>
                 </Condition>
                 <PartText x="177" y="346" width="96" height="34" name="weather">
