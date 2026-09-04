@@ -104,3 +104,7 @@ Positions are on the 450x450 virtual canvas, which the runtime scales to the dev
 | 155 | time, 128px, in a 140px band centred on 225 |
 | 304 | rule |
 | 326 | complication slots, 118x62, at x=100 and x=232 |
+
+## License
+
+MIT. See [LICENSE](LICENSE).
