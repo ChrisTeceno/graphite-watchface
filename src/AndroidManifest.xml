@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.teceno.watchface.graphite">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <!-- hasCode MUST be false: a Watch Face Format bundle is resources only. -->
+    <application
+        android:label="@string/watch_face_name"
+        android:hasCode="false">
+
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+        <!--
+          WFF v2 is the lowest version that carries every feature this face uses
+          (Condition/Expressions, Transform on Arc endAngle, UNREAD_NOTIFICATION_COUNT).
+          Staying at 2 keeps it installable on Wear OS 5 and up, Wear OS 7 included.
+        -->
+        <property
+            android:name="com.google.wear.watchface.format.version"
+            android:value="2" />
+    </application>
+</manifest>

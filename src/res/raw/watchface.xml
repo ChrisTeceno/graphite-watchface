@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Graphite - a greyscale digital Wear OS watch face.
+
+  Layout on the 450x450 virtual canvas (scaled to the device, so it fits both
+  Pixel Watch 3 sizes: 384x384 for the 41mm and 456x456 for the 45mm):
+
+      (no notification dot: Wear OS paints its own, low and centred)
+      y=104   date, muted
+      y=155   time, hh:mm, 128px
+      y=304   rule
+      y=326   two complication slots, battery and heart rate by default
+
+  The palette is a single grey ramp on black. With no colour to lean on, the
+  hierarchy is carried by brightness alone, so pure white is reserved for the
+  three accents (seconds arc, notification dot, rule) and the time sits a step
+  below it. Everything that moves or glows is dropped in ambient.
+-->
+<WatchFace width="450" height="450" clipShape="CIRCLE">
+    <Metadata key="CLOCK_TYPE" value="DIGITAL"/>
+    <Metadata key="PREVIEW_TIME" value="10:08:41"/>
+
+    <Scene backgroundColor="#ff000000">
+
+        <!-- Outer rail: the track the seconds arc runs on. -->
+        <PartDraw x="0" y="0" width="450" height="450" name="rail">
+            <Variant mode="AMBIENT" target="alpha" value="0"/>
+            <Arc centerX="225" centerY="225" width="432" height="432"
+                 startAngle="0" endAngle="360" direction="CLOCKWISE">
+                <Stroke color="#ff1c1e22" thickness="3"/>
+            </Arc>
+        </PartDraw>
+
+        <!-- Seconds: white arc sweeping from 12 o'clock. Hidden in ambient. -->
+        <PartDraw x="0" y="0" width="450" height="450" name="seconds">
+            <Variant mode="AMBIENT" target="alpha" value="0"/>
+            <Arc centerX="225" centerY="225" width="432" height="432"
+                 startAngle="0" endAngle="0" direction="CLOCKWISE">
+                <Transform target="endAngle" value="[SECOND] * 6"/>
+                <Stroke color="#ffffffff" thickness="3" cap="ROUND"/>
+            </Arc>
+        </PartDraw>
+
+        <!--
+          No notification dot is drawn here on purpose.
+
+          Wear OS already paints its own unread-notification indicator over the
+          watch face, low and centred, and it appears and disappears on exactly
+          the same condition this face would have used. Drawing our own put two
+          dots on screen at once, one top and one bottom. The system's is the
+          one that stays; it is standard and needs no device settings changed.
+
+          If you ever want the dot at the top instead, the system indicator can
+          be switched off device-wide with
+              adb shell settings put system unread_notification_dot_indicator 0
+          but that affects every watch face, not just this one.
+        -->
+
+        <!--
+          Date, e.g. "Fri 04 Sep".
+
+          Drawn ONCE. An earlier version faux-bolded this by stacking four
+          copies at 1px offsets, which did thicken the stroke but left the
+          glyphs visibly blurry: every overlapping antialiased edge softens the
+          one under it. A single draw at a larger size is both heavier and
+          crisp, so the stroke comes from size here, not from stacking.
+
+          Do not reintroduce offset copies. <Outline> is not an option either:
+          it is silently ignored by the runtime (a width=4 outline in pure red
+          rendered nothing at all), and the font's weight ladder tops out at
+          BLACK, worth only ~10% over BOLD.
+        -->
+        <PartText x="0" y="98" width="450" height="42" name="date">
+            <Variant mode="AMBIENT" target="alpha" value="130"/>
+            <!-- Tapping the date opens the calendar. CALENDAR is a built-in
+                 system shortcut, so this follows whatever calendar app the
+                 watch resolves rather than hardcoding a package name. -->
+            <Launch target="CALENDAR"/>
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="30" weight="BLACK"
+                      letterSpacing="0.16" color="#ffc4ccd6">
+                    <Template><![CDATA[%s %s %s]]>
+                        <Parameter expression="[DAY_OF_WEEK_S]"/>
+                        <Parameter expression="[DAY_Z]"/>
+                        <Parameter expression="[MONTH_S]"/>
+                    </Template>
+                </Font>
+            </Text>
+        </PartText>
+
+        <!--
+          Time, with no separator between hours and minutes. The two halves are
+          separate TimeText elements butted against a 26px gutter rather than one
+          element with a space in the format: a literal space in the format
+          string makes the whole element render nothing at all.
+
+          Each half is drawn twice, LIGHT for interactive and THIN and dimmer
+          for ambient, swapped by alpha Variants.
+        -->
+        <DigitalClock x="0" y="155" width="450" height="140" name="clock">
+            <TimeText format="hh" hourFormat="24" align="END"
+                      x="0" y="0" width="212" height="140" alpha="255">
+                <Variant mode="AMBIENT" target="alpha" value="0"/>
+                <Font family="SYNC_TO_DEVICE" size="128" weight="LIGHT" color="#ffe8ebef"/>
+            </TimeText>
+            <TimeText format="hh" hourFormat="24" align="END"
+                      x="0" y="0" width="212" height="140" alpha="0">
+                <Variant mode="AMBIENT" target="alpha" value="255"/>
+                <Font family="SYNC_TO_DEVICE" size="128" weight="THIN" color="#ffb9bfc9"/>
+            </TimeText>
+
+            <TimeText format="mm" hourFormat="24" align="START"
+                      x="238" y="0" width="212" height="140" alpha="255">
+                <Variant mode="AMBIENT" target="alpha" value="0"/>
+                <Font family="SYNC_TO_DEVICE" size="128" weight="LIGHT" color="#ffe8ebef"/>
+            </TimeText>
+            <TimeText format="mm" hourFormat="24" align="START"
+                      x="238" y="0" width="212" height="140" alpha="0">
+                <Variant mode="AMBIENT" target="alpha" value="255"/>
+                <Font family="SYNC_TO_DEVICE" size="128" weight="THIN" color="#ffb9bfc9"/>
+            </TimeText>
+        </DigitalClock>
+
+        <!-- The one bright accent under the time. -->
+        <PartDraw x="197" y="304" width="56" height="2" name="rule">
+            <Variant mode="AMBIENT" target="alpha" value="0"/>
+            <Rectangle x="0" y="0" width="56" height="2">
+                <Fill color="#ffffffff"/>
+            </Rectangle>
+        </PartDraw>
+
+        <!--
+          Two swappable slots rather than hardcoded readouts. They default to
+          battery and heart rate, so the face is useful out of the box, but the
+          wearer can put weather, next event or anything else in either one.
+          Letting the system providers supply the icon also keeps the glyphs
+          monochrome: a literal heart character gets picked up by the colour
+          emoji font and renders as a red blob.
+
+          The value text sits at a fixed y in both slots, outside the icon
+          Condition, so the two numbers stay on one baseline whether or not a
+          given provider supplies an icon.
+        -->
+        <ComplicationSlot x="100" y="326" width="118" height="62" slotId="0"
+                          name="left_complication"
+                          displayName="left_complication_label"
+                          supportedTypes="SHORT_TEXT EMPTY">
+            <Variant mode="AMBIENT" target="alpha" value="130"/>
+            <DefaultProviderPolicy defaultSystemProvider="WATCH_BATTERY"
+                                   defaultSystemProviderType="SHORT_TEXT"/>
+            <BoundingRoundBox x="0" y="0" width="118" height="62"
+                              outlinePadding="2.0" cornerRadius="16"/>
+            <Complication type="SHORT_TEXT">
+                <Condition>
+                    <Expressions>
+                        <Expression name="left_icon"><![CDATA[[COMPLICATION.MONOCHROMATIC_IMAGE] != null]]></Expression>
+                    </Expressions>
+                    <Compare expression="left_icon">
+                        <PartImage x="46" y="0" width="26" height="26" tintColor="#ffdde1e7">
+                            <Image resource="[COMPLICATION.MONOCHROMATIC_IMAGE]"/>
+                        </PartImage>
+                    </Compare>
+                </Condition>
+                <PartText x="0" y="28" width="118" height="34">
+                    <Text align="CENTER" ellipsis="TRUE">
+                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[COMPLICATION.TEXT]"/>
+                            </Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+        <!--
+          Heart rate, through a complication slot rather than the [HEART_RATE]
+          data source: that source reads 0 on the emulator even with
+          BODY_SENSORS granted, while the HEART_RATE complication provider
+          returns live values.
+
+          This slot always draws ic_heart.png rather than the provider's own
+          icon, because tintColor MULTIPLIES rather than replaces: the white
+          battery mark in the left slot comes out grey, but Google's heart-rate
+          icon is already red, so red x grey lands on a dark red (measured
+          116,40,45 on the watch) and there is no way to grey it. Our own white
+          asset multiplies cleanly to the palette grey.
+
+          The cost is that the heart stays put if this slot is pointed at some
+          other provider.
+        -->
+        <ComplicationSlot x="232" y="326" width="118" height="62" slotId="1"
+                          name="right_complication"
+                          displayName="right_complication_label"
+                          supportedTypes="SHORT_TEXT EMPTY">
+            <Variant mode="AMBIENT" target="alpha" value="130"/>
+            <DefaultProviderPolicy defaultSystemProvider="HEART_RATE"
+                                   defaultSystemProviderType="SHORT_TEXT"/>
+            <BoundingRoundBox x="0" y="0" width="118" height="62"
+                              outlinePadding="2.0" cornerRadius="16"/>
+            <Complication type="SHORT_TEXT">
+                <PartImage x="46" y="0" width="26" height="26" tintColor="#ffdde1e7">
+                    <Image resource="ic_heart"/>
+                </PartImage>
+                <PartText x="0" y="28" width="118" height="34">
+                    <Text align="CENTER" ellipsis="TRUE">
+                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
+                            <Template><![CDATA[%s]]>
+                                <Parameter expression="[COMPLICATION.TEXT]"/>
+                            </Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+    </Scene>
+</WatchFace>

@@ -1,0 +1,10 @@
+# Build output: aapt2 intermediates and the signed APK, all reproducible
+# from src/ via ./build.sh.
+build/
+
+# Debug keystore lives in ~/.android and is generated on first build if
+# missing. Never commit signing material.
+*.keystore
+*.jks
+
+.DS_Store

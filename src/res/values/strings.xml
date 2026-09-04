@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="watch_face_name">Graphite</string>
+    <string name="left_complication_label">Left</string>
+    <string name="right_complication_label">Right</string>
+</resources>
