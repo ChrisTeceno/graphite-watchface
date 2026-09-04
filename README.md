@@ -6,15 +6,17 @@ A greyscale digital watch face for Wear OS, built in [Watch Face Format](https:/
 |---|---|
 | <img src="docs/interactive.png" width="320" alt="Graphite watch face in interactive mode: date, 24-hour time, battery and heart rate"> | <img src="docs/ambient.png" width="320" alt="Graphite watch face in ambient mode: thinner time, arc and rule dropped, everything dimmed"> |
 
-Both are real captures from a Pixel Watch 3. The small dot at the bottom is Wear OS's own unread-notification indicator, not part of the face. Ambient drops the seconds arc, the rail and the rule, thins the time and dims the rest, measuring 4.6% lit pixels against 10.2% interactive.
+Both are real captures from a Pixel Watch 3. The small dot at the bottom is Wear OS's own unread-notification indicator, not part of the face. Ambient drops the seconds arc and the rail, thins the time and dims the rest.
 
-Black ground, a single grey ramp, and no colour anywhere. With no hue to lean on the hierarchy is carried by brightness alone, so pure white is reserved for the two accents (the seconds arc and the rule under the time) and the time itself sits one step below.
+Black ground, a single grey ramp, and no colour anywhere. With no hue to lean on the hierarchy is carried by brightness alone, so pure white is reserved for a single accent, the seconds arc, and the time itself sits one step below.
 
 - **Time** in 24-hour, with no separator: hours and minutes are two elements either side of a 26px gutter.
 - **Seconds** sweep as a white arc on a dim outer rail.
 - **No notification dot of its own.** Wear OS already draws one, low and centred; a second at 12 o'clock just doubled it.
 - **Tap the date** to open the calendar.
-- **Two complication slots**, defaulting to battery and heart rate, both swappable.
+- **Bottom row of three**: a battery slot, the current temperature, and a heart rate slot. The outer two are swappable complications.
+- **Weather glyph** follows the actual conditions, with separate day and night sets.
+- **Live moon phase** when the night sky is clear, tracking the real lunar cycle.
 - **Ambient** drops the arc, rail and rule, thins the time and dims everything else.
 
 ## Build
@@ -79,6 +81,10 @@ Notes from getting this working, so they don't have to be rediscovered.
 - **`tintColor` multiplies, it does not replace.** A white source multiplies cleanly to whatever grey you name, but Google's heart-rate complication icon is already red, so tinting it grey lands on a dark red (measured 116,40,45 on the watch) with no way to neutralise it. That is why the right slot always draws its own white `ic_heart.png` instead of the provider's icon. The battery icon in the left slot is white at source, so the provider's own image tints correctly.
 - **The `[HEART_RATE]` data source reads 0 on the emulator**, with or without `BODY_SENSORS` granted, even while logcat shows `DWF:WearHealthProvider` receiving samples, and `adb emu sensor set heart-rate 72` does not change that. The `HEART_RATE` complication provider does return live values, which is why heart rate goes through a slot here.
 - **`res/raw/watchface.xml` must stay plain text** in the APK, since the runtime reads it with `openRawResource()`. `aapt2` leaves `raw/` alone, and `build.sh` asserts it.
+- **Weather and moon phase are native to WFF, no complication slot needed.** `[WEATHER.TEMPERATURE]`, `[WEATHER.CONDITION]` and `[MOON_PHASE_TYPE]` come straight from the runtime with no manifest permission. Guard weather with `[WEATHER.IS_AVAILABLE]`: it genuinely reads false for a while after install, until the watch's weather source first fetches, and without the guard you get a bare `0`.
+- **A BitmapFont turns an enum into an icon lookup.** `[WEATHER.CONDITION]` is 0-15 and `[MOON_PHASE_TYPE]` is 0-7, so declaring a `<BitmapFont>` whose character names are those numbers lets the value index the glyph directly, instead of a sixteen-branch `Condition` chain. **Names 0-9 must be `<Character>` but 10-15 are two characters each and must be `<Word>`** - get that wrong and those conditions silently render nothing.
+- **Moon phases are computed, not drawn.** The terminator of a lit sphere projects to an ellipse, so the boundary at height y sits at `x = k*sqrt(1-y^2)` with `k = 1-2*illuminated`. That yields new through full continuously and mirrors correctly for waning. Google's eight `MOON_PHASE_TYPE` bands are coarse though: a 46%-lit moon still reports Morning Crescent. `[MOON_PHASE_POSITION]` gives 0-28 days if you want finer fidelity.
+- **Bare symbols beat cloud-plus-detail at 26px.** Snow as a flake and thunderstorm as a bolt read instantly; the same conditions drawn as a cloud with strokes or a small bolt beneath mushed together. Check glyph ink boxes against each other, since a shape can be nominally 26px and still render 18px of actual ink.
 - **`cmd alarm set-timezone <tz>` shifts the clock without root**, which is the way to test time-dependent rendering on a production Wear image where `adb root` is refused. Verifying 24-hour output at 09:00 is impossible because both formats render `09`; pointing the emulator at `Europe/London` made it 16:09 and settled it in one shot.
 - **Shell-injected notifications do not raise `UNREAD_NOTIFICATION_COUNT`.** `cmd notification post` creates records that `dumpsys notification` lists but the count still reads 0, a condition on it cannot be verified on the emulator. It does fire on the watch, confirmed on hardware before the dot was removed as redundant.
 
@@ -102,8 +108,7 @@ Positions are on the 450x450 virtual canvas, which the runtime scales to the dev
 |---|---------|
 | 98 | date, 30px BLACK, taps through to the calendar |
 | 155 | time, 128px, in a 140px band centred on 225 |
-| 304 | rule |
-| 326 | complication slots, 118x62, at x=100 and x=232 |
+| 318 | bottom row, three 96x62 cells at x=71, x=177 and x=283 |
 
 ## License
 
