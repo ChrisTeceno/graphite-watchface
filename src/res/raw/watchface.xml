@@ -272,100 +272,113 @@
         </ComplicationSlot>
 
         <!--
-          Current temperature, centre cell of the bottom row.
+          The weather cell is a Group so a single <Launch> covers the icon,
+          the temperature and the gap between them, rather than needing one
+          per part with dead space in between. Child coordinates are relative
+          to the group origin at (177, 318).
 
-          WFF exposes weather natively from v2, so this needs no complication
-          slot and no permission in the manifest: the runtime supplies the data
-          from whatever weather source the watch already has. IS_AVAILABLE
-          guards it, since the reading is empty until that source has fetched.
-
-          Sits on the same baseline as the two flanking values, so the three
-          numbers line up.
+          There is no WEATHER system shortcut the way there is for CALENDAR,
+          so the target is a package name. That pins this to the Pixel weather
+          app; on another vendor's watch the tap would do nothing.
         -->
-        <Condition>
-            <Expressions>
-                <Expression name="weatherReady"><![CDATA[[WEATHER.IS_AVAILABLE]]]></Expression>
-            </Expressions>
-            <Compare expression="weatherReady">
-                <!-- Day or night glyph set, chosen by IS_DAY so CLEAR reads as
-                     a sun by day and a moon by night. -->
-                <Condition>
-                    <Expressions>
-                        <Expression name="isDay"><![CDATA[[WEATHER.IS_DAY]]]></Expression>
-                    </Expressions>
-                    <Compare expression="isDay">
-                <PartText x="177" y="318" width="96" height="26"
-                          name="wx_icon_day" tintColor="#ffdde1e7">
-                    <Variant mode="AMBIENT" target="alpha" value="130"/>
-                    <Text align="CENTER">
-                        <BitmapFont family="wx_day" size="26">
-                            <Template><![CDATA[%s]]>
-                                <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
-                            </Template>
-                        </BitmapFont>
-                    </Text>
-                </PartText>
-                    </Compare>
-                    <Default>
-                        <!-- CLEAR (1) and SUNNY (8) at night mean an
-                             unobscured sky, so show the actual lunar phase
-                             rather than a generic crescent. Every other
-                             condition falls through to the weather glyph. -->
-                        <Condition>
-                            <Expressions>
-                                <Expression name="clearNight"><![CDATA[[WEATHER.CONDITION] == 1 || [WEATHER.CONDITION] == 8]]></Expression>
-                            </Expressions>
-                            <Compare expression="clearNight">
-                <PartText x="177" y="318" width="96" height="26"
-                          name="moon_icon" tintColor="#ffdde1e7">
-                    <Variant mode="AMBIENT" target="alpha" value="130"/>
-                    <Text align="CENTER">
-                        <BitmapFont family="moon_phases" size="26">
-                            <Template><![CDATA[%s]]>
-                                <Parameter expression="[MOON_PHASE_TYPE]"/>
-                            </Template>
-                        </BitmapFont>
-                    </Text>
-                </PartText>
-                            </Compare>
-                            <Default>
-                <PartText x="177" y="318" width="96" height="26"
-                          name="wx_icon_night" tintColor="#ffdde1e7">
-                    <Variant mode="AMBIENT" target="alpha" value="130"/>
-                    <Text align="CENTER">
-                        <BitmapFont family="wx_night" size="26">
-                            <Template><![CDATA[%s]]>
-                                <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
-                            </Template>
-                        </BitmapFont>
-                    </Text>
-                </PartText>
-                            </Default>
-                        </Condition>
-                    </Default>
-                </Condition>
-                <PartText x="177" y="346" width="96" height="34" name="weather">
-                    <Variant mode="AMBIENT" target="alpha" value="130"/>
-                    <Text align="CENTER">
-                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
-                            <Template><![CDATA[%d°]]>
-                                <Parameter expression="[WEATHER.TEMPERATURE]"/>
-                            </Template>
-                        </Font>
-                    </Text>
-                </PartText>
-            </Compare>
-            <Default>
-                <PartText x="177" y="346" width="96" height="34" name="weather_none">
-                    <Variant mode="AMBIENT" target="alpha" value="100"/>
-                    <Text align="CENTER">
-                        <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ff5c636c">
-                            <Template><![CDATA[--]]></Template>
-                        </Font>
-                    </Text>
-                </PartText>
-            </Default>
-        </Condition>
+        <Group x="177" y="318" width="96" height="62" name="weather_cell">
+            <Launch target="com.google.android.apps.weather"/>
+            <!--
+              Current temperature, centre cell of the bottom row.
+
+              WFF exposes weather natively from v2, so this needs no complication
+              slot and no permission in the manifest: the runtime supplies the data
+              from whatever weather source the watch already has. IS_AVAILABLE
+              guards it, since the reading is empty until that source has fetched.
+
+              Sits on the same baseline as the two flanking values, so the three
+              numbers line up.
+            -->
+            <Condition>
+                <Expressions>
+                    <Expression name="weatherReady"><![CDATA[[WEATHER.IS_AVAILABLE]]]></Expression>
+                </Expressions>
+                <Compare expression="weatherReady">
+                    <!-- Day or night glyph set, chosen by IS_DAY so CLEAR reads as
+                         a sun by day and a moon by night. -->
+                    <Condition>
+                        <Expressions>
+                            <Expression name="isDay"><![CDATA[[WEATHER.IS_DAY]]]></Expression>
+                        </Expressions>
+                        <Compare expression="isDay">
+                    <PartText x="0" y="0" width="96" height="26"
+                              name="wx_icon_day" tintColor="#ffdde1e7">
+                        <Variant mode="AMBIENT" target="alpha" value="130"/>
+                        <Text align="CENTER">
+                            <BitmapFont family="wx_day" size="26">
+                                <Template><![CDATA[%s]]>
+                                    <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
+                                </Template>
+                            </BitmapFont>
+                        </Text>
+                    </PartText>
+                        </Compare>
+                        <Default>
+                            <!-- CLEAR (1) and SUNNY (8) at night mean an
+                                 unobscured sky, so show the actual lunar phase
+                                 rather than a generic crescent. Every other
+                                 condition falls through to the weather glyph. -->
+                            <Condition>
+                                <Expressions>
+                                    <Expression name="clearNight"><![CDATA[[WEATHER.CONDITION] == 1 || [WEATHER.CONDITION] == 8]]></Expression>
+                                </Expressions>
+                                <Compare expression="clearNight">
+                    <PartText x="0" y="0" width="96" height="26"
+                              name="moon_icon" tintColor="#ffdde1e7">
+                        <Variant mode="AMBIENT" target="alpha" value="130"/>
+                        <Text align="CENTER">
+                            <BitmapFont family="moon_phases" size="26">
+                                <Template><![CDATA[%s]]>
+                                    <Parameter expression="[MOON_PHASE_TYPE]"/>
+                                </Template>
+                            </BitmapFont>
+                        </Text>
+                    </PartText>
+                                </Compare>
+                                <Default>
+                    <PartText x="0" y="0" width="96" height="26"
+                              name="wx_icon_night" tintColor="#ffdde1e7">
+                        <Variant mode="AMBIENT" target="alpha" value="130"/>
+                        <Text align="CENTER">
+                            <BitmapFont family="wx_night" size="26">
+                                <Template><![CDATA[%s]]>
+                                    <Parameter expression="[WEATHER.CONDITION] &lt;= 15 ? [WEATHER.CONDITION] : 0"/>
+                                </Template>
+                            </BitmapFont>
+                        </Text>
+                    </PartText>
+                                </Default>
+                            </Condition>
+                        </Default>
+                    </Condition>
+                    <PartText x="0" y="28" width="96" height="34" name="weather">
+                        <Variant mode="AMBIENT" target="alpha" value="130"/>
+                        <Text align="CENTER">
+                            <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ffffffff">
+                                <Template><![CDATA[%d°]]>
+                                    <Parameter expression="[WEATHER.TEMPERATURE]"/>
+                                </Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                </Compare>
+                <Default>
+                    <PartText x="0" y="28" width="96" height="34" name="weather_none">
+                        <Variant mode="AMBIENT" target="alpha" value="100"/>
+                        <Text align="CENTER">
+                            <Font family="SYNC_TO_DEVICE" size="29" weight="BOLD" color="#ff5c636c">
+                                <Template><![CDATA[--]]></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                </Default>
+            </Condition>
+        </Group>
 
     </Scene>
 </WatchFace>
